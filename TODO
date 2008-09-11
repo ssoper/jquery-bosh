@@ -1,0 +1,4 @@
+1. Finish out rest of spec implementation
+2. Implement DIGEST-MD5 (only PLAIN is supported now)
+3. Simple client example
+4. More tests!

@@ -1,0 +1,49 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" dir="ltr" id="html">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Test BOSH</title>
+    <link rel="Stylesheet" media="screen" href="testsuite.css"/>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js"></script>
+    <script type="text/javascript" src="jqUnit.js"></script>
+    <script type="text/javascript" src="../jquery.bosh.js"></script>
+    <script type="text/javascript" src="../jquery.base64.js"></script>
+    <script>
+var temp = function ($) { with (jqUnit) {
+
+  module("Test session creation");
+  test('URL correctly parsed', function() {
+    session = new $.bosh.Session('localhost/http-bind/', 'fake_user', 'my_password');
+    equals(session.url, 'http://localhost/http-bind/');
+
+    session = new $.bosh.Session('https://localhost', 'fake_user', 'my_password');
+    equals(session.url, 'https://localhost');
+  });
+
+  test('Default value for "to"', function() {
+    session = new $.bosh.Session('localhost/http-bind/', 'fake_user', 'my_password');
+    equals(session.to, 'localhost');
+  });
+
+} }(jQuery);
+    </script>
+  </head>
+  <body id="body">
+    <h1 id="header">Test BOSH</h1>
+		
+    <h2 id="banner"></h2>
+		
+    <h2 id="userAgent"></h2>
+		
+    <!-- Test HTML -->
+    <div id="main" style="display: none;">
+      <form id="test-form">
+        <input/>
+      </form>
+      <div id="ajax">
+        
+      </div>
+    </div>
+    <ol id="tests"></ol>
+  </body>
+</html>
