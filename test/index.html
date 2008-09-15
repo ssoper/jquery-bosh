@@ -25,6 +25,20 @@ var temp = function ($) { with (jqUnit) {
     equals(session.to, 'localhost');
   });
 
+  module('Test tag builder');
+  test('Empty tag', function() {
+    equals(jQuery.bosh.tagBuilder('body'), '<body/>');
+  });
+  
+  test('Nested tags', function() {
+    equals(jQuery.bosh.tagBuilder('body', jQuery.bosh.tagBuilder('message')), '<body><message/></body>');
+  });
+  
+  test('Tag attributes', function() {
+    equals(jQuery.bosh.tagBuilder('body', { id: 1, onclick: 'doSomething()' }), "<body id='1' onclick='doSomething()'/>");
+    equals(jQuery.bosh.tagBuilder('body', { xmlns_xmpp: 'jabber' }), "<body xmlns:xmpp='jabber'/>");
+  });
+
 } }(jQuery);
     </script>
   </head>

@@ -1,16 +1,22 @@
 jQuery.bosh = jQuery.extend({
 
-	post: function( url, data, callback, type ) {
+	post: function( session, data, callback ) {
 		if ( jQuery.isFunction( data ) ) {
 			callback = data;
 			data = {};
 		}
 
+		jQuery.bosh.log(data, '-Sent-');
+
 		return jQuery.ajax({
 			type: "POST",
-			url: url,
+			url: session.url,
 			data: data,
-			success: callback,
+			success: function(recvd, status) {
+				session.lastResponse = recvd.documentElement;
+				jQuery.bosh.log(recvd, '+Recvd+');
+				if (callback) callback(recvd, status);
+			},
 			dataType: "xml",
 			contentType: "text/xml"
 		});
@@ -32,15 +38,15 @@ jQuery.bosh = jQuery.extend({
 		return Math.round(100000.5 + (((900000.49999) - (100000.5)) * Math.random()));
 	},
 
-	logTransaction: function( sent, received ) {
+	log: function( data, header ) {
 		if (!jQuery.bosh.settings.debug) return true
 		if (typeof console == 'undefined') return true
 		try {
-			console.log('');
-			console.log('-Sent-');
-			console.log(sent);
-			console.log('+Recvd+');
-			console.log(received.documentElement);
+			if (header) console.log(header);
+			if (typeof data.documentElement == 'undefined') 
+				console.log(data);
+			else
+				console.log(data.documentElement);
 		} catch (exception) {
 			console.log(exception);
 		}
@@ -69,23 +75,15 @@ jQuery.bosh = jQuery.extend({
 	},
 
 	Session: function( url, username, password, to ) {
-
-
 		this.url = ( url.match(/^https?:\/\//) == null ? 'http://' + url : url );
 		this.to = ( to ? to : 'localhost' );
-		this.sid = null;
-		this.rid = jQuery.bosh.generateRid();
-		this.wait = null;
-		this.ver = null;
-		this.inactivity = null;
-		this.requests = null;
-		this.hold = null;
-		this.lastResponse = null;
 		this.route = 'xmpp:' + this.to + ':' + jQuery.bosh.settings.port;
-		this.connected = false;
-
 		this.username = username;
 		this.password = password;
+
+		this.rid = jQuery.bosh.generateRid();
+		this.lastResponse = null;
+		this.connected = false;
 
 		this.incrementRid = function() {
 			this.rid += 1;
@@ -94,39 +92,18 @@ jQuery.bosh = jQuery.extend({
 	
 		this.open = function() {
 			if (this.connected) return false;
-					
+
 			var self = this;
-			var packet = this.requestSID();
 			
-			jQuery.bosh.post(self.url, packet, function(data, status) {		
-				self.lastResponse = data.documentElement;
-				self.sid = data.documentElement.getAttribute('sid');
-				self.wait = data.documentElement.getAttribute('wait');
-				self.ver = data.documentElement.getAttribute('ver');
-				self.inactivity = data.documentElement.getAttribute('inactivity');
-				self.requests = data.documentElement.getAttribute('requests');
-				self.hold = data.documentElement.getAttribute('hold');
-				jQuery.bosh.logTransaction(packet, data);
-				packet1 = self.login();
+			jQuery.bosh.post(self, self.requestSID(), function(data, status) {
+				jQuery.each(['sid', 'wait', 'ver', 'inactivity', 'requests'], function(k, v) {
+					self[v] = data.documentElement.getAttribute(v);
+				});
 
-				jQuery.bosh.post(self.url, packet1, function(data, status) {
-					self.lastResponse = data.documentElement;
-					jQuery.bosh.logTransaction(packet1, data);
-					var packet2 = self.bindToStream();
-
-					jQuery.bosh.post(self.url, packet2, function(data, status) {
-						self.lastResponse = data.documentElement;
-						jQuery.bosh.logTransaction(packet2, data);
-						var packet3 = self.startSession();
-			
-						jQuery.bosh.post(self.url, packet3, function(data, status) {
-							self.lastResponse = data.documentElement;
-							jQuery.bosh.logTransaction(packet3, data);
-							var packet4 = self.setPresence();
-			
-							jQuery.bosh.post(self.url, packet4, function(data, status) {
-								self.lastResponse = data.documentElement;
-								jQuery.bosh.logTransaction(packet4, data);
+				jQuery.bosh.post(self, self.login(), function(data, status) {
+					jQuery.bosh.post(self, self.bindToStream(), function(data, status) {
+						jQuery.bosh.post(self, self.startSession(), function(data, status) {
+							jQuery.bosh.post(self, self.setPresence(), function(data, status) {
 								self.connected = true;
 							});
 						});
@@ -136,9 +113,15 @@ jQuery.bosh = jQuery.extend({
 		};
 
 		this.close = function() {
-			this.sid = null;
-			this.lastResponse = null;
-			this.connected = false;
+			var self = this;
+			var packet = this.body({ type: 'terminate'}, 
+									   jQuery.bosh.tagBuilder('presence', { type: 'unavailable', xmlns: 'jabber:client' }));
+			
+			jQuery.bosh.post(self, packet, function(data, status) {
+				self.sid = null;
+				self.rid = null;
+				self.connected = false;
+			});
 		};
 
 		this.sendMessage = function( recipient, msg ) {
@@ -149,12 +132,8 @@ jQuery.bosh = jQuery.extend({
 			var packet = this.body({}, 
 								     jQuery.bosh.tagBuilder('message', { xmlns: 'jabber:client', to: to, from: from },
 								       jQuery.bosh.tagBuilder('body', msg)));
-			var self = this;
 
-			jQuery.bosh.post(this.url, packet, function(data, status) {
-				self.lastResponse = data.documentElement;
-				console.log(data.documentElement)
-			});
+			jQuery.bosh.post(this, packet);
 		};
 		
 		this.body = function( attrs, data ) {
