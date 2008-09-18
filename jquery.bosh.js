@@ -22,7 +22,7 @@ jQuery.bosh = jQuery.extend({
 		});
 	},
 
-	boshSetup: function( settings ) {
+	setup: function( settings ) {
 		jQuery.extend( jQuery.bosh.settings, settings )
 	},
 	
@@ -31,6 +31,7 @@ jQuery.bosh = jQuery.extend({
 		xmlns: 'urn:ietf:params:xml:ns:xmpp',
 		resource: 'jquery-bosh',
 		port: 5222,
+		polling: false,
 		debug: true // * Change back to false on release *
 	},
 
@@ -96,7 +97,7 @@ jQuery.bosh = jQuery.extend({
 			var self = this;
 			
 			jQuery.bosh.post(self, self.requestSID(), function(data, status) {
-				jQuery.each(['sid', 'wait', 'ver', 'inactivity', 'requests'], function(k, v) {
+				jQuery.each(['sid', 'wait', 'ver', 'inactivity', 'requests', 'polling'], function(k, v) {
 					self[v] = data.documentElement.getAttribute(v);
 				});
 
@@ -136,47 +137,55 @@ jQuery.bosh = jQuery.extend({
 			jQuery.bosh.post(this, packet);
 		};
 		
+		this.poll = function() {
+			jQuery.bosh.post(this, this.body({}), function(data, status) {
+				log(data.documentElement)
+			});
+		}
+		
 		this.body = function( attrs, data ) {
 			attrs = jQuery.extend(attrs, { rid: this.incrementRid(), sid: this.sid, xmlns: jQuery.bosh.settings.protocol });
-			return jQuery.bosh.tagBuilder('body', attrs, data)
+			return jQuery.bosh.tagBuilder('body', attrs, data);
 		};
 		
 		this.setPresence = function() {
-			return this.body({}, jQuery.bosh.tagBuilder('presence', { xmlns: 'jabber:client' }))
-		}
+			return this.body({}, jQuery.bosh.tagBuilder('presence', { xmlns: 'jabber:client' }));
+		};
 		
 		this.startSession = function() {
 			return this.body({}, 
 						   jQuery.bosh.tagBuilder('iq', { xmlns: 'jabber:client', to: this.to, type: 'set', id: 'sess_1' },
-						     jQuery.bosh.tagBuilder('session', { xmlns: jQuery.bosh.settings.xmlns + "-session" })))
-		}
+						     jQuery.bosh.tagBuilder('session', { xmlns: jQuery.bosh.settings.xmlns + "-session" })));
+		};
 		
 		this.bindToStream = function() {
 			return this.body({ xmpp_restart: 'true' }, 
 						   jQuery.bosh.tagBuilder('iq', { xmlns: 'jabber:client', to: this.to, type: 'set', id: 'bind_1' }, 
 							   jQuery.bosh.tagBuilder('bind', { xmlns: jQuery.bosh.settings.xmlns + "-bind" }, 
-								   jQuery.bosh.tagBuilder('resource', jQuery.bosh.settings.resource))))
-			
+								   jQuery.bosh.tagBuilder('resource', jQuery.bosh.settings.resource))));
 		};
 		
 		this.login = function() {
 			var auth = jQuery.base64Encode(this.username + '@' + this.to + String.fromCharCode(0) + this.username + String.fromCharCode(0) + this.password);
 			var xmlns = jQuery.bosh.settings.xmlns + "-sasl";
-			return this.body({}, jQuery.bosh.tagBuilder('auth', { xmlns: xmlns, mechanism: 'PLAIN' }, auth))
+			return this.body({}, jQuery.bosh.tagBuilder('auth', { xmlns: xmlns, mechanism: 'PLAIN' }, auth));
 		};
 		
 		this.requestSID = function() {
 			var attributes = {
-				hold: 1,
-				wait: 300,
+				hold: 1, 
+				wait: 300, 
 				secure: false,
 				ver: '1.6',
 				xmpp_xmlns: 'urn:xmpp:xbosh',
 				xmpp_version: '1.0'
 			};
+
+			// Check for polling
+			if (jQuery.bosh.settings.polling) { attributes = jQuery.extend(attributes, { hold: 0, wait: 0 }) };
 		
 			attributes = jQuery.extend(attributes, { to: this.to, route: this.route, rid: this.rid, xmlns: jQuery.bosh.settings.protocol });
-			return jQuery.bosh.tagBuilder('body', attributes)
+			return jQuery.bosh.tagBuilder('body', attributes);
 		};
 	}
 
