@@ -75,6 +75,42 @@ jQuery.bosh = jQuery.extend({
 		return req;
 	},
 
+	toText: function( xmlResponse ) {
+		if (xmlResponse == null) return false;
+		if (typeof xmlResponse.xml != "undefined") return xmlResponse.xml;
+		try {
+			if (typeof XMLSerializer == "function") return (new XMLSerializer()).serializeToString(xmlResponse);
+		} catch (exception) {
+			jQuery.bosh.log(exception, 'Error when attempting XML serialization');
+		}
+		return false;
+	},
+
+	Message: function ( packet ) {
+		this.from = null;
+		this.message = null;
+		this.timestamp = null;
+
+		if (!packet) return;
+
+		if (packet.getAttribute('from') && packet.getAttribute('from').split("@").length > 1)
+			this.from = packet.getAttribute('from').split("@")[0];
+
+		if (jQuery('body', packet).length > 0)
+			this.message = jQuery('body', packet).text();
+
+		if (jQuery('x[stamp]', packet).length > 0) {
+			ts = jQuery('x[stamp]', packet).attr('stamp');
+			this.timestamp = new Date();
+			this.timestamp.setUTCFullYear(Number(ts.substr(0, 4)));
+			this.timestamp.setUTCMonth(Number(ts.substr(4, 2)) - 1);
+			this.timestamp.setUTCDate(Number(ts.substr(6, 2)));
+			this.timestamp.setUTCHours(Number(ts.substr(9, 2)));
+			this.timestamp.setUTCMinutes(Number(ts.substr(12, 2)));
+			this.timestamp.setUTCSeconds(Number(ts.substr(15, 2)));
+		}
+	},
+
 	Session: function( url, username, password, to ) {
 		this.url = ( url.match(/^https?:\/\//) == null ? 'http://' + url : url );
 		this.to = ( to ? to : 'localhost' );
@@ -86,16 +122,11 @@ jQuery.bosh = jQuery.extend({
 		this.lastResponse = null;
 		this.connected = false;
 
+		this.messageQueue = [];
+
 		this.incrementRid = function() {
 			this.rid += 1;
 			return this.rid;
-		};
-
-		this.lastResponseText = function() {
-			if (this.lastResponse == null) return false;
-			if (this.lastResponse.xml) return this.lastResponse.xml;
-			if (typeof XMLSerializer == "function") return (new XMLSerializer()).serializeToString(this.lastResponse);
-			return false;
 		};
 
 		this.open = function() {
@@ -113,6 +144,9 @@ jQuery.bosh = jQuery.extend({
 						jQuery.bosh.post(self, self.startSession(), function(data, status) {
 							jQuery.bosh.post(self, self.setPresence(), function(data, status) {
 								self.connected = true;
+								jQuery('message', data).each(function(k, v) { 
+									self.messageQueue.push(new jQuery.bosh.Message(v));
+								});
 							});
 						});
 					});
