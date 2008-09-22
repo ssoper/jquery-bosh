@@ -13,7 +13,7 @@ jQuery.bosh = jQuery.extend({
 			url: session.url,
 			data: data,
 			success: function(recvd, status) {
-				session.lastResponse = recvd.documentElement;
+				session.lastResponse = recvd;
 				jQuery.bosh.log(recvd, '+Recvd+');
 				if (callback) callback(recvd, status);
 			},
@@ -90,7 +90,14 @@ jQuery.bosh = jQuery.extend({
 			this.rid += 1;
 			return this.rid;
 		};
-	
+
+		this.lastResponseText = function() {
+			if (this.lastResponse == null) return false;
+			if (this.lastResponse.xml) return this.lastResponse.xml;
+			if (typeof XMLSerializer == "function") return (new XMLSerializer()).serializeToString(this.lastResponse);
+			return false;
+		};
+
 		this.open = function() {
 			if (this.connected) return false;
 
