@@ -103,7 +103,7 @@ jQuery.bosh = jQuery.extend({
 			ts = jQuery('x[stamp]', packet).attr('stamp');
 			this.timestamp = new Date();
 			this.timestamp.setUTCFullYear(Number(ts.substr(0, 4)));
-			this.timestamp.setUTCMonth(Number(ts.substr(4, 2)) - 1);
+			this.timestamp.setUTCMonth(Number(ts.substr(4, 2)) - 1); // Javscript months are 0-11
 			this.timestamp.setUTCDate(Number(ts.substr(6, 2)));
 			this.timestamp.setUTCHours(Number(ts.substr(9, 2)));
 			this.timestamp.setUTCMinutes(Number(ts.substr(12, 2)));
@@ -129,8 +129,16 @@ jQuery.bosh = jQuery.extend({
 			return this.rid;
 		};
 
+		this.ingestMessages = function( data, self ) {
+			self = ( self ? self : this );
+			self.messageQueue = [];
+			jQuery('message', data).each(function(k, v) { 
+				self.messageQueue.push(new jQuery.bosh.Message(v));
+			});
+		};
+
 		this.open = function() {
-			if (this.connected) return false;
+			if (this.connected) return true;
 
 			var self = this;
 			
@@ -144,9 +152,7 @@ jQuery.bosh = jQuery.extend({
 						jQuery.bosh.post(self, self.startSession(), function(data, status) {
 							jQuery.bosh.post(self, self.setPresence(), function(data, status) {
 								self.connected = true;
-								jQuery('message', data).each(function(k, v) { 
-									self.messageQueue.push(new jQuery.bosh.Message(v));
-								});
+								self.ingestMessages(data, self);
 							});
 						});
 					});
@@ -156,7 +162,7 @@ jQuery.bosh = jQuery.extend({
 
 		this.close = function() {
 			var self = this;
-			var packet = this.body({ type: 'terminate'}, 
+			var packet = this.body({ type: 'terminate' }, 
 									   jQuery.bosh.tagBuilder('presence', { type: 'unavailable', xmlns: 'jabber:client' }));
 			
 			jQuery.bosh.post(self, packet, function(data, status) {
@@ -169,20 +175,31 @@ jQuery.bosh = jQuery.extend({
 		this.sendMessage = function( recipient, msg ) {
 			if (!this.connected) return false;
 
+			var self = this;
 			var to = recipient + '@' + this.to;
 			var from = this.username + '@' + this.to;
 			var packet = this.body({}, 
 								     jQuery.bosh.tagBuilder('message', { xmlns: 'jabber:client', to: to, from: from },
 								       jQuery.bosh.tagBuilder('body', msg)));
 
-			jQuery.bosh.post(this, packet);
-		};
-		
-		this.poll = function() {
-			jQuery.bosh.post(this, this.body({}), function(data, status) {
-				log(data.documentElement)
+			jQuery.bosh.post(this, packet, function(data, status) {
+				self.ingestMessages(data, self);
 			});
-		}
+		};
+
+		this.listen = function( callback ) {
+			if (!this.connected) return false;
+
+			var self = this;
+			jQuery.bosh.post(this, this.body({}), function(data, status) {
+				self.ingestMessages(data, self);
+				if (callback) callback(self.messageQueue);
+			});
+		};
+
+		this.poll = function() {
+			jQuery.bosh.post(this, this.body({}));
+		};
 		
 		this.body = function( attrs, data ) {
 			attrs = jQuery.extend(attrs, { rid: this.incrementRid(), sid: this.sid, xmlns: jQuery.bosh.settings.protocol });

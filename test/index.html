@@ -8,6 +8,24 @@
     <script type="text/javascript" src="jqUnit.js"></script>
     <script type="text/javascript" src="../jquery.bosh.js"></script>
     <script type="text/javascript" src="../jquery.base64.js"></script>
+    
+    <script>
+    $.extend(jqUnit, {
+      createDocument: function( root ) {
+        var packet = null;
+        if (window.ActiveXObject) {
+          packet = new ActiveXObject("Msxml.DOMDocument");
+          packet.loadXML('<' + root + '/>');
+        } 
+        else {
+          packet = document.implementation.createDocument('', root, null);
+        }
+        
+        return packet;
+      }
+    });
+    </script>
+    
     <script>
 var temp = function ($) { with (jqUnit) {
 
@@ -37,6 +55,36 @@ var temp = function ($) { with (jqUnit) {
   test('Tag attributes', function() {
     equals(jQuery.bosh.tagBuilder('body', { id: 1, onclick: 'doSomething()' }), "<body id='1' onclick='doSomething()'/>");
     equals(jQuery.bosh.tagBuilder('body', { xmlns_xmpp: 'jabber' }), "<body xmlns:xmpp='jabber'/>");
+  });
+  
+  module('Test Message parsing');
+  test('Valid packet', function() {
+    packet = createDocument('message');
+    packet.firstChild.setAttribute('from', 'sean@host/client');
+    packet.firstChild.setAttribute('to', 'john@host');
+    packet.firstChild.appendChild(packet.createElement('body'));
+    packet.firstChild.childNodes[0].appendChild(packet.createTextNode("Hello"));
+    packet.firstChild.appendChild(packet.createElement('x'));
+    packet.firstChild.childNodes[1].setAttribute('stamp', '20080923T02:38:05');
+
+    message = new jQuery.bosh.Message(packet.documentElement);
+
+    equals(message.from, 'sean');
+    equals(message.message, 'Hello');
+    equals(message.timestamp.getUTCFullYear(), 2008);
+    equals(message.timestamp.getUTCMonth(), 8);
+    equals(message.timestamp.getUTCDate(), 23);
+    equals(message.timestamp.getUTCHours(), 2);
+    equals(message.timestamp.getUTCMinutes(), 38);
+    equals(message.timestamp.getUTCSeconds(), 5);
+  });
+  
+  test('Empty packet', function() {
+    message = new jQuery.bosh.Message();
+
+    equals(message.from, null);
+    equals(message.message, null);
+    equals(message.timestamp, null);
   });
 
 } }(jQuery);
