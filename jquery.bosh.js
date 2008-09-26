@@ -77,9 +77,9 @@ jQuery.bosh = jQuery.extend({
 
 	toText: function( xmlResponse ) {
 		if (xmlResponse == null) return false;
-		if (typeof xmlResponse.xml != "undefined") return xmlResponse.xml;
+		if (typeof xmlResponse.xml != 'undefined') return xmlResponse.xml;
 		try {
-			if (typeof XMLSerializer == "function") return (new XMLSerializer()).serializeToString(xmlResponse);
+			if (typeof XMLSerializer == 'function') return (new XMLSerializer()).serializeToString(xmlResponse);
 		} catch (exception) {
 			jQuery.bosh.log(exception, 'Error when attempting XML serialization');
 		}
