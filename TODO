@@ -2,3 +2,5 @@
 2. Implement DIGEST-MD5 (only PLAIN is supported now)
 3. Simple client example
 4. More tests!
+5. Code structuring
+6. Ferret out cases whereby a request gets sent and no new request is generated thus meaning messages get queued on Jabber server
