@@ -1,27 +1,5 @@
 jQuery.bosh = jQuery.extend({
 
-	post: function( session, data, callback ) {
-		if ( jQuery.isFunction( data ) ) {
-			callback = data;
-			data = {};
-		}
-
-		jQuery.bosh.log(data, '-Sent-');
-
-		return jQuery.ajax({
-			type: "POST",
-			url: session.url,
-			data: data,
-			success: function(recvd, status) {
-				session.lastResponse = recvd;
-				jQuery.bosh.log(recvd, '+Recvd+');
-				if (callback) callback(recvd, status);
-			},
-			dataType: "xml",
-			contentType: "text/xml"
-		});
-	},
-
 	setup: function( settings ) {
 		jQuery.extend( jQuery.bosh.settings, settings )
 	},
@@ -86,10 +64,21 @@ jQuery.bosh = jQuery.extend({
 		return false;
 	},
 
-	Message: function ( packet ) {
+  logMessages: function( messages ) {
+    jQuery(messages).each(function(k, v) { 
+      jQuery.bosh.log('Message ' + k);
+      jQuery.bosh.log(v.from, 'From');
+      ts = v.timestamp || 'none supplied';
+      jQuery.bosh.log(ts, 'Timestamp');
+      jQuery.bosh.log(v.message, 'Message');
+    });
+  },
+
+	Message: function( packet ) {
 		this.from = null;
 		this.message = null;
 		this.timestamp = null;
+    this.raw = packet;
 
 		if (!packet) return;
 
@@ -97,7 +86,10 @@ jQuery.bosh = jQuery.extend({
 			this.from = packet.getAttribute('from').split("@")[0];
 
 		if (jQuery('body', packet).length > 0)
-			this.message = jQuery('body', packet).text();
+      this.message = jQuery.trim(jQuery('body', packet).text());
+//jQuery.trim(jQuery('body', x.messageQueue[0].raw)[0].firstChild)
+
+			
 
 		if (jQuery('x[stamp]', packet).length > 0) {
 			ts = jQuery('x[stamp]', packet).attr('stamp');
@@ -141,18 +133,18 @@ jQuery.bosh = jQuery.extend({
     jQuery.bosh.log(response, 'Error');
   },
 
-	Session: function( url, username, password, to ) {
+	Session: function( url, username, password, cbMsgRecvd, domain ) {
 		this.url = ( url.match(/^https?:\/\//) == null ? 'http://' + url : url );
-		this.to = ( to ? to : 'localhost' );
-		this.route = 'xmpp:' + this.to + ':' + jQuery.bosh.settings.port;
+		this.domain = domain || 'localhost';
+		this.route = 'xmpp:' + this.domain + ':' + jQuery.bosh.settings.port;
 		this.username = username;
 		this.password = password;
 
 		this.rid = jQuery.bosh.generateRid();
 		this.lastResponse = null;
 		this.connected = false;
-
 		this.messageQueue = [];
+    this.cbMsgRecvd = cbMsgRecvd || jQuery.bosh.logMessages;
 
 		this.incrementRid = function() {
 			this.rid += 1;
@@ -172,8 +164,8 @@ jQuery.bosh = jQuery.extend({
     };
 
     this.messageReceived = function( self, response ) {
-      alert(jQuery.bosh.toText(response));
       self.ingestMessages(self, response);
+      self.cbMsgRecvd(self.messageQueue);
       self.listen();
     };
 
@@ -182,7 +174,7 @@ jQuery.bosh = jQuery.extend({
 			
 			var attributes = {
 				hold: 1, 
-				wait: 300, 
+				wait: 298, 
 				secure: false,
 				ver: '1.6',
 				xmpp_xmlns: 'urn:xmpp:xbosh',
@@ -192,7 +184,7 @@ jQuery.bosh = jQuery.extend({
 			// Check for polling
 			if (jQuery.bosh.settings.polling) { attributes = jQuery.extend(attributes, { hold: 0, wait: 0 }) };
 		
-			attributes = jQuery.extend(attributes, { to: this.to, route: this.route, rid: this.rid, xmlns: jQuery.bosh.settings.protocol });
+			attributes = jQuery.extend(attributes, { to: this.domain, route: this.route, rid: this.rid, xmlns: jQuery.bosh.settings.protocol });
 			jQuery.bosh.send(this, jQuery.bosh.tagBuilder('body', attributes), this.login);
 		};
 
@@ -201,7 +193,7 @@ jQuery.bosh = jQuery.extend({
 				self[v] = response.documentElement.getAttribute(v);
 			});
 
-			var auth = jQuery.base64Encode(self.username + '@' + self.to + String.fromCharCode(0) + self.username + String.fromCharCode(0) + self.password);
+			var auth = jQuery.base64Encode(self.username + '@' + self.domain + String.fromCharCode(0) + self.username + String.fromCharCode(0) + self.password);
 			var xmlns = jQuery.bosh.settings.xmlns + "-sasl";
       var packet = self.body({}, jQuery.bosh.tagBuilder('auth', { xmlns: xmlns, mechanism: 'PLAIN' }, auth))
 			jQuery.bosh.send(self, packet, self.bindToStream);
@@ -209,7 +201,7 @@ jQuery.bosh = jQuery.extend({
 
 		this.bindToStream = function( self, response ) {
 			var packet = self.body({ xmpp_restart: 'true' }, 
-						         jQuery.bosh.tagBuilder('iq', { xmlns: 'jabber:client', to: self.to, type: 'set', id: 'bind_1' }, 
+						         jQuery.bosh.tagBuilder('iq', { xmlns: 'jabber:client', to: self.domain, type: 'set', id: 'bind_1' }, 
 							         jQuery.bosh.tagBuilder('bind', { xmlns: jQuery.bosh.settings.xmlns + "-bind" }, 
 								         jQuery.bosh.tagBuilder('resource', jQuery.bosh.settings.resource))));
       jQuery.bosh.send(self, packet, self.startSession);
@@ -217,7 +209,7 @@ jQuery.bosh = jQuery.extend({
 
 		this.startSession = function( self, response ) {
 			var packet = self.body({}, 
-						         jQuery.bosh.tagBuilder('iq', { xmlns: 'jabber:client', to: self.to, type: 'set', id: 'sess_1' },
+						         jQuery.bosh.tagBuilder('iq', { xmlns: 'jabber:client', to: self.domain, type: 'set', id: 'sess_1' },
 						           jQuery.bosh.tagBuilder('session', { xmlns: jQuery.bosh.settings.xmlns + "-session" })));
       jQuery.bosh.send(self, packet, self.setPresence);
 		};
@@ -237,7 +229,7 @@ jQuery.bosh = jQuery.extend({
 			var packet = this.body({ type: 'terminate' }, 
 									   jQuery.bosh.tagBuilder('presence', { type: 'unavailable', xmlns: 'jabber:client' }));
 			
-			jQuery.bosh.post(this, packet, this.completeLogout);
+			jQuery.bosh.send(this, packet, this.completeLogout);
 		};
 
     this.completeLogout = function( self, response ) {
@@ -249,8 +241,8 @@ jQuery.bosh = jQuery.extend({
 		this.sendMessage = function( recipient, msg ) {
 			if (!this.connected) return false;
 
-			var to = recipient + '@' + this.to;
-			var from = this.username + '@' + this.to;
+			var to = recipient + '@' + this.domain;
+			var from = this.username + '@' + this.domain;
 			var packet = this.body({}, 
 								     jQuery.bosh.tagBuilder('message', { xmlns: 'jabber:client', to: to, from: from },
 								       jQuery.bosh.tagBuilder('body', msg)));
@@ -259,7 +251,7 @@ jQuery.bosh = jQuery.extend({
 		};
 
 		this.poll = function() {
-			jQuery.bosh.post(this, this.body({}));
+			jQuery.bosh.send(this, this.body({}));
 		};
 		
 		this.body = function( attrs, data ) {

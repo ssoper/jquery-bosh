@@ -1,0 +1,52 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background-image: url(glow.jpg);
+  background-position: center top;
+  background-repeat: no-repeat;
+	text-align: center;
+  background-color: #202128;
+  font-size: 10pt;
+}
+
+#distance { 
+  width: 1px;
+	height: 50%;
+	background-color: #202128;
+	margin-bottom: -300px;
+	float: left;
+}
+
+#container {
+	margin: 0 auto;
+	position: relative; 
+	text-align: left;
+	height: 600px;
+	width: 900px;
+	clear: left;
+	background-color: transparent;
+}
+
+#container div {
+	width: 400px;
+  height: 600px;
+  background-color: white;
+  overflow: auto;
+}
+
+#container div#left {
+	float: left;
+  margin-right: 50px;
+}
+
+#container div#right {
+	float:left;
+  margin-left:50px;
+}
