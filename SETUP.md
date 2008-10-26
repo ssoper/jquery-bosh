@@ -76,5 +76,5 @@ Make sure the following lines are uncommented
     AddModule mod_proxy.c
 
 It may be necessary to add the ProxyTimeout directive to the Apache configs though the value should be 300 by default.
-[1]: http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxytimeout
+http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxytimeout
 
