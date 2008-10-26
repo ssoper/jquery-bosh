@@ -87,9 +87,6 @@ jQuery.bosh = jQuery.extend({
 
 		if (jQuery('body', packet).length > 0)
       this.message = jQuery.trim(jQuery('body', packet).text());
-//jQuery.trim(jQuery('body', x.messageQueue[0].raw)[0].firstChild)
-
-			
 
 		if (jQuery('x[stamp]', packet).length > 0) {
 			ts = jQuery('x[stamp]', packet).attr('stamp');
