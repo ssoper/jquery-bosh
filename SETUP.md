@@ -5,11 +5,11 @@ Setting up XMPP
 
 #### Mac
 
-Obtain the [dmg installer][http://www.process-one.net/en/ejabberd/downloads/]
+Obtain the [dmg installer](http://www.process-one.net/en/ejabberd/downloads/) and run it.
 
 #### Linux
 
-Use the package manager to install erlang and related dependencies. Then install ejabberd version 2.0 or greater. Use a package manager or build from source.
+Use your preferred package manager to install erlang and related dependencies. Then install ejabberd version 2.0 or greater. You can use a package manager or build from source.
 
     sudo vi /etc/ejabberd/ejabberd.cfg 
 
@@ -44,8 +44,8 @@ Add the http_bind service
 Restart the ejabberd server and browse to http://localhost:5280/http-bind/ to verify the service is running.
 
 References:
-[http://www.ostinelli.net/2008/04/28/how-to-install-ejabberd-200-with-postgresql-support]
-[http://wiki.contribs.org/Ejabberd]
+<http://www.ostinelli.net/2008/04/28/how-to-install-ejabberd-200-with-postgresql-support>
+<http://wiki.contribs.org/Ejabberd>
 
 ### Modify web server for proxy pass
 
@@ -76,5 +76,5 @@ Make sure the following lines are uncommented
     AddModule mod_proxy.c
 
 It may be necessary to add the ProxyTimeout directive to the Apache configs though the value should be 300 by default.
-http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxytimeout
+<http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxytimeout>
 
