@@ -38,9 +38,9 @@ var temp = function ($) { with (jqUnit) {
     equals(session.url, 'https://localhost');
   });
 
-  test('Default value for "to"', function() {
+  test('Default value for "domain"', function() {
     session = new $.bosh.Session('localhost/http-bind/', 'fake_user', 'my_password');
-    equals(session.to, 'localhost');
+    equals(session.domain, 'localhost');
   });
 
   module('Test tag builder');
