@@ -1,0 +1,101 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+  background-image: url(glow.jpg);
+  background-position: center top;
+  background-repeat: no-repeat;
+	text-align: center;
+  background-color: #202128;
+  font-size: 12pt;
+  font-family: Verdana,Helvetica,sans-serif
+}
+
+#login {
+  width: 300px;
+  height: 200px;
+  margin: 300 auto;
+  border: black solid thin;
+  background-color: #999;
+  text-align: center;
+}
+
+#login .field {
+  height: 30%;
+  width: 270px;
+  margin: 10 auto auto 10; 
+  border: black solid thin;
+  text-align: left;
+  padding: 3px;
+  background-color: transparent;
+}
+
+#login input {
+  clear: left;
+  float: left;
+}
+
+#login input#login-button {
+  margin: 8px auto;
+  float: none;
+}
+
+.chat-window {
+  width: 300px;
+  height: 250px;
+  text-align: left;
+  margin: 0 20px;
+  background-color: #999;
+  margin-top: 20px;
+  border: black solid thin;
+  display: none;
+}
+
+.chat-window .header {
+  width: 100%;
+  height: 20px;
+  text-align: center;
+  background-color: orange;
+  border: 0;
+  border-bottom: black solid thin;
+}
+
+.chat-window .incoming {
+  width: 292px;
+  height: 94px;
+  margin: 3px auto;
+  background-color: white;
+  overflow: auto;
+  border: black solid thin;
+}
+
+.chat-window .message span.to {
+  color: red;
+  font-weight: bold;
+}
+
+.chat-window .message span.from {
+  color: blue;
+  font-weight: bold;
+}
+
+.chat-window textarea.outgoing {
+  width: 294px;
+  height: 94px;
+  margin-top: 1px;
+  margin-left: 3px;
+  border: black solid thin;
+  background-color: white;
+  overflow: auto;
+  font-size: 12pt;
+  font-family: Verdana,Helvetica,sans-serif;
+}
+
+.chat-window .send {
+  border: 0;
+  text-align: center;
+  margin-top: 3px;
+}
+

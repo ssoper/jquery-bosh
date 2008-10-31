@@ -1,0 +1,79 @@
+<html>
+<head>
+<script src="../../jquery-1.2.6.js"></script>
+<script src="../../jquery.base64.js"></script>
+<script src="../../jquery.bosh.js"></script>
+<link href="styles.css" media="screen" rel="stylesheet" type="text/css" />
+<script>
+var host = 'http://localhost/http-bind';
+var loggedIn = false;
+
+/*
+var users = [{ name: 'alice', password: 'secret', div: 'left' },
+               { name: 'bob', password: 'secret', div: 'right' }]
+
+var sessions = [];
+
+function addText(element, settings) {
+  if (settings['to'] == null)
+    html = "<p class='message'><span class='from'>" + settings['from'] + ":</span> ";
+  else
+    html = "<p class='message'><span class='to'>" + settings['to'] + ":</span> ";
+  html += settings['message'] + "</p>";
+  element.children(".incoming").append(html);
+}
+
+$(document).ready(function() {
+  // Create sessions
+  $(users).each(function(k, v) {
+    sessions[k] = new $.bosh.Session(host, v.name, v.password);
+    sessions[k].open();
+    var this_div = $("#" + users[k].div);
+
+    // Set message received callback function
+    sessions[k].cbMsgRecvd = function(messages) {
+      $(messages).each(function(k, v) {
+        addText(this_div, { to: v.from, message: v.message });
+      });
+    }
+  });
+
+  // Attach event to button
+  $('#container > div').each(function(k, v) {
+    $(v).find('div.send > input[type="button"]').bind('click', function() {
+      var recipient = $(v).children('input[type="hidden"]:first').val();
+      var message = $.trim($(v).children('textarea:first').val());
+      if (message == "") return;
+      sessions[k].sendMessage(recipient, message);
+      $(v).children('textarea:first')[0].value = "";
+      addText($(v), { from: users[k].name, message: message });
+    });
+  });
+});
+*/
+</script>
+</head>
+<body>
+<div id="container">
+
+	<div class="chat-window">
+    <div class="header">Alice</div>
+    <div class="incoming"></div>
+    <textarea class="outgoing"></textarea>
+    <input type="hidden" name="recipient" value="bob">
+    <div class="send"><input type="button" value="Send" name="send"></div>
+	</div>
+
+  <div id="login">
+    <div class="field">
+      Login<input type="text" name="username">
+    </div>
+    <div class="field">
+      Password<input type="text" name="password">
+    </div>
+    <input type="submit" value="Login" id="login-button">
+  </div>
+
+</div>
+</body>
+</html>
