@@ -9,7 +9,6 @@ jQuery.bosh = jQuery.extend({
 		xmlns: 'urn:ietf:params:xml:ns:xmpp',
 		resource: 'jquery-bosh',
 		port: 5222,
-		polling: false,
 		debug: true // * Change back to false on release *
 	},
 
@@ -114,11 +113,11 @@ jQuery.bosh = jQuery.extend({
 		  success: function(recvd, status) {
 			  session.lastResponse = recvd;
 			  jQuery.bosh.log(recvd, '+Recvd+');
-				success_cb(session, recvd);
+				if (success_cb) success_cb(session, recvd);
 			},
       error: function(recvd, status) {
         session.lastResponse = recvd;
-        failure_cb(recvd, status);
+        if (failure_cb) failure_cb(recvd, status);
       },
 			dataType: "xml",
 			contentType: "text/xml"
@@ -130,7 +129,7 @@ jQuery.bosh = jQuery.extend({
     jQuery.bosh.log(response, 'Error');
   },
 
-	Session: function( url, username, password, cbMsgRecvd, domain ) {
+	Session: function( url, username, password, domain, cbMsgRecvd ) {
 		this.url = ( url.match(/^https?:\/\//) == null ? 'http://' + url : url );
 		this.domain = domain || 'localhost';
 		this.route = 'xmpp:' + this.domain + ':' + jQuery.bosh.settings.port;
@@ -177,16 +176,13 @@ jQuery.bosh = jQuery.extend({
 				xmpp_xmlns: 'urn:xmpp:xbosh',
 				xmpp_version: '1.0'
 			};
-
-			// Check for polling
-			if (jQuery.bosh.settings.polling) { attributes = jQuery.extend(attributes, { hold: 0, wait: 0 }) };
 		
 			attributes = jQuery.extend(attributes, { to: this.domain, route: this.route, rid: this.rid, xmlns: jQuery.bosh.settings.protocol });
 			jQuery.bosh.send(this, jQuery.bosh.tagBuilder('body', attributes), this.login);
 		};
 
 		this.login = function( self, response ) {
-			jQuery.each(['sid', 'wait', 'ver', 'inactivity', 'requests', 'polling'], function(k, v) {
+			jQuery.each(['sid', 'wait', 'ver', 'inactivity', 'requests'], function(k, v) {
 				self[v] = response.documentElement.getAttribute(v);
 			});
 
@@ -245,10 +241,6 @@ jQuery.bosh = jQuery.extend({
 								       jQuery.bosh.tagBuilder('body', msg)));
 
       jQuery.bosh.send(this, packet, this.ingestMessages);
-		};
-
-		this.poll = function() {
-			jQuery.bosh.send(this, this.body({}));
 		};
 		
 		this.body = function( attrs, data ) {
