@@ -8,7 +8,7 @@ html, body {
 }
 
 body {
-  background-image: url(glow.jpg);
+  background-image: url(../images/glow.jpg);
   background-position: center top;
   background-repeat: no-repeat;
 	text-align: center;

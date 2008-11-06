@@ -8,7 +8,7 @@
 var host = 'http://localhost/http-bind';
 
 var users = [{ name: 'alice', password: 'secret', div: 'left' },
-               { name: 'bob', password: 'secret', div: 'right' }]
+             { name: 'bob', password: 'secret', div: 'right' }]
 
 var sessions = [];
 
@@ -29,7 +29,7 @@ $(document).ready(function() {
     var this_div = $("#" + users[k].div);
 
     // Set message received callback function
-    sessions[k].cbMsgRecvd = function(messages) {
+    sessions[k].callbacks.message.received = function(messages) {
       $(messages).each(function(k, v) {
         addText(this_div, { to: v.from, message: v.message });
       });

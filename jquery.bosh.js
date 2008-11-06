@@ -12,6 +12,10 @@ jQuery.bosh = jQuery.extend({
 		debug: true // * Change back to false on release *
 	},
 
+  errors: {
+    not_authorized: 'Invalid login'
+  },
+
 	generateRid: function() {
 		return Math.round(100000.5 + (((900000.49999) - (100000.5)) * Math.random()));
 	},
@@ -99,9 +103,66 @@ jQuery.bosh = jQuery.extend({
 		}
 	},
 
-	send: function( session, data, success_cb, failure_cb ) {
-    if (!jQuery.isFunction(failure_cb)) {
-      failure_cb = jQuery.bosh.handleFailure;
+  Presence: function( packet ) {
+    this.jid = packet.getAttribute('jid') || packet.getAttribute('from');
+    this.jid = this.jid.split('/')[0];  // JID sometimes contains Jabber client 'user@domain/client'
+    this.name = this.jid.split('@')[0];
+    this.available = packet.getAttribute('type') == 'unavailable' ? false : true;
+  },
+
+  Roster: function() {
+    this.items = [];
+    
+    this.find = function( presence ) {
+      var result = null;
+      jQuery(this.items).each(function(k, v) {
+        if (presence.jid == v.jid) result = k;
+      });
+      return result;
+    };
+
+    this.push = function( presence ) {
+      found = this.find(presence);
+      if (found == null) 
+        this.items.push(presence);
+      else 
+        this.items[found] = presence;
+    };
+    
+    this.clear = function() {
+      this.items = [];
+    };
+  },
+
+  Error: function(type, message) {
+    this.type = type;
+    this.message = message;
+  },
+
+  checkForFailure: function( session, packet ) {
+    if (!packet) return false;
+    
+    if (jQuery('failure', packet).length > 0) {
+      error = $('failure', packet)[0].firstChild.tagName.replace("-", "_");
+      jQuery(jQuery.bosh.errors).each(function(k, v) {
+        if (v[error]) session.error = new jQuery.bosh.Error(error, v[error])
+      });
+      
+      // Error received did not match any in errors hash
+      if (!session.error) session.error = new jQuery.bosh.Error('unknown', error)
+
+      // Login has not been compeleted and a failure callback exists 
+      if (!session.connected && session.callbacks.login.failure) session.callbacks.login.failure();
+
+      return false;
+    }
+
+    return true;
+  },
+  
+	send: function( session, data, cbSuccess, cbFailure ) {
+    if (!jQuery.isFunction(cbFailure)) {
+      cbFailure = jQuery.bosh.handleFailure;
     }
 
   	jQuery.bosh.log(data, '-Sent-');
@@ -113,23 +174,24 @@ jQuery.bosh = jQuery.extend({
 		  success: function(recvd, status) {
 			  session.lastResponse = recvd;
 			  jQuery.bosh.log(recvd, '+Recvd+');
-				if (success_cb) success_cb(session, recvd);
+			  if (!jQuery.bosh.checkForFailure(session, recvd)) return false;
+				if (cbSuccess) cbSuccess(session, recvd);
 			},
       error: function(recvd, status) {
         session.lastResponse = recvd;
-        if (failure_cb) failure_cb(recvd, status);
+        cbFailure(session, recvd);
       },
 			dataType: "xml",
 			contentType: "text/xml"
 		});
 	},
 
-  handleFailure: function( response, status ) {
-    jQuery.bosh.log(status, 'HTTP Code');
+  handleFailure: function( session, response ) {
+    // jQuery.bosh.log(status, 'HTTP Code');
     jQuery.bosh.log(response, 'Error');
   },
 
-	Session: function( url, username, password, domain, cbMsgRecvd ) {
+	Session: function( url, username, password, domain ) {
 		this.url = ( url.match(/^https?:\/\//) == null ? 'http://' + url : url );
 		this.domain = domain || 'localhost';
 		this.route = 'xmpp:' + this.domain + ':' + jQuery.bosh.settings.port;
@@ -139,8 +201,34 @@ jQuery.bosh = jQuery.extend({
 		this.rid = jQuery.bosh.generateRid();
 		this.lastResponse = null;
 		this.connected = false;
-		this.messageQueue = [];
-    this.cbMsgRecvd = cbMsgRecvd || jQuery.bosh.logMessages;
+		this.error = null;
+    this.roster = new jQuery.bosh.Roster;
+      
+    this.callbacks = {
+      login: {
+        success: null,
+        failure: null
+      },
+      message: {
+        received: null,
+        sent: null
+      },
+      subscription: {
+        request: null,
+        confirmation: null
+      },
+      roster: {
+        updated: null
+      }
+    };
+    
+    this.queues = {
+      messages: [],
+      subscription: {
+        requests: [],
+        confirmations: []
+      }
+    };
 
 		this.incrementRid = function() {
 			this.rid += 1;
@@ -148,26 +236,61 @@ jQuery.bosh = jQuery.extend({
 		};
 
 		this.ingestMessages = function( self, data ) {
-			self = ( self ? self : this );
-			self.messageQueue = [];
+			self.queues.messages = [];
 			jQuery('message', data).each(function(k, v) { 
-				self.messageQueue.push(new jQuery.bosh.Message(v));
+				self.queues.messages.push(new jQuery.bosh.Message(v));
 			});
+
+      if (self.callbacks.message.received) self.callbacks.message.received(self.queues.messages);
 		};
 
-    this.listen = function() {
-      jQuery.bosh.send(this, this.body({}), this.messageReceived);
+    this.ingestPresences = function( self, data ) {
+      jQuery('presence', data).each(function(k, v) {
+        var username = v.getAttribute('from').split('@')[0]
+        if (username != self.username) self.roster.push(new jQuery.bosh.Presence(v));
+      });
+      
+      if (self.callbacks.roster.updated) self.callbacks.roster.updated();
     };
 
-    this.messageReceived = function( self, response ) {
-      self.ingestMessages(self, response);
-      self.cbMsgRecvd(self.messageQueue);
+    this.ingestSubscriptionRequests = function( self, data ) {
+      self.queues.subscription.requests = [];
+      jQuery('presence[type="subscribe"]', data).each(function(k, v) {
+        self.queues.subscription.requests.push(new jQuery.bosh.Presence(v));
+      });
+
+      if (self.callbacks.subscription.request) self.callbacks.subscription.request(self.queues.subscription.requests);
+    };
+
+    this.ingestSubscriptionConfirmations = function( self, data ) {
+      self.queues.subscription.confirmations = [];
+      jQuery('presence[type="subscribed"]', data).each(function(k, v) {
+        self.queues.subscription.confirmations.push(new jQuery.bosh.Presence(v));
+      });
+
+      if (self.callbacks.subscription.confirmation) self.callbacks.subscription.confirmation(self.queues.subscription.confirmations);
+    };
+
+    this.listen = function() {
+      jQuery.bosh.send(this, this.body({}), this.packetReceived);
+    };
+
+    this.packetReceived = function( self, response ) {
+      if (jQuery('message', response).length > 0)
+        self.ingestMessages(self, response);
+      else if (jQuery('presence[type="subscribe"]', response).length > 0)
+        self.ingestSubscriptionRequests(self, response);
+      else if (jQuery('presence[type="subscribed"]', response).length > 0)
+        self.ingestSubscriptionConfirmations(self, response);
+      else if (jQuery('presence', response).length > 0)
+        self.ingestPresences(self, response);
+
       self.listen();
     };
 
 		this.open = function() {
 			if (this.connected) return true;
-			
+
 			var attributes = {
 				hold: 1, 
 				wait: 298, 
@@ -214,7 +337,9 @@ jQuery.bosh = jQuery.extend({
 
     this.completeLogin = function( self, response ) {
 			self.connected = true;
+			self.ingestPresences(self, response);
 			self.ingestMessages(self, response);
+			self.fillRoster(self);
       self.listen();
     };
 
@@ -234,15 +359,55 @@ jQuery.bosh = jQuery.extend({
 		this.sendMessage = function( recipient, msg ) {
 			if (!this.connected) return false;
 
-			var to = recipient + '@' + this.domain;
+			var jid = this.parseJid(recipient);
 			var from = this.username + '@' + this.domain;
 			var packet = this.body({}, 
-								     jQuery.bosh.tagBuilder('message', { xmlns: 'jabber:client', to: to, from: from },
+								     jQuery.bosh.tagBuilder('message', { xmlns: 'jabber:client', to: jid, from: from },
 								       jQuery.bosh.tagBuilder('body', msg)));
 
       jQuery.bosh.send(this, packet, this.ingestMessages);
 		};
 		
+		this.requestSubscription = function( recipient ) {
+			if (!this.connected) return false;
+
+			var jid = this.parseJid(recipient);
+			var packet = this.body({}, jQuery.bosh.tagBuilder('presence', { xmlns: 'jabber:client', to: jid, type: 'subscribe' }));
+      jQuery.bosh.send(this, packet);
+		};
+
+		this.approveSubscription = function( recipient ) {
+			if (!this.connected) return false;
+
+			var jid = this.parseJid(recipient);
+			var packet = this.body({}, jQuery.bosh.tagBuilder('presence', { xmlns: 'jabber:client', to: jid, type: 'subscribed' }));
+      jQuery.bosh.send(this, packet);
+		};
+
+    this.parseJid = function( recipient ) {
+      return (recipient.split('@').length > 1) ? recipient : recipient + '@' + this.domain;
+    };
+
+		this.fillRoster = function( self ) {
+			if (!self.connected) return false;
+
+			var from = this.username + '@' + this.domain;
+			var packet = this.body({}, 
+                     jQuery.bosh.tagBuilder('iq', { xmlns: 'jabber:client', from: from, type: 'get', id: 'roster_1' },
+                       jQuery.bosh.tagBuilder('query', { xmlns: 'jabber:iq:roster' })));
+
+      jQuery.bosh.send(this, packet, function( self, data ) {
+        jQuery('query > item[subscription!="none"]', data).each(function(k, v) {
+          var presence = new jQuery.bosh.Presence(v);
+          presence.available = false;
+          if (self.roster.find(presence) == null) self.roster.push(presence);
+        });
+
+        // Login has succeeded and a success callback exists
+  			if (self.callbacks.login.success) self.callbacks.login.success();
+      });
+		};
+
 		this.body = function( attrs, data ) {
 			attrs = jQuery.extend(attrs, { rid: this.incrementRid(), sid: this.sid, xmlns: jQuery.bosh.settings.protocol });
 			return jQuery.bosh.tagBuilder('body', attrs, data);

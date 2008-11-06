@@ -6,8 +6,122 @@
 <link href="styles.css" media="screen" rel="stylesheet" type="text/css" />
 <script>
 var host = 'http://localhost/http-bind';
-var loggedIn = false;
+var session = null;
 
+$(document).ready(function() {
+  $('#login-button').bind('click', login);
+  $('#logout-button').bind('click', logout);
+  $('#roster-add').bind('click', subscribe);
+  // $('#roster-delete').bind('click', unsubscribe);
+});
+
+function login() {
+  session = new $.bosh.Session(host, $('#username').val(), $('#password').val());
+  session.callbacks.login.success = loginSucceeded;
+  session.callbacks.login.failure = loginFailed;
+  session.callbacks.subscription.request = subscriptionRequest;
+  session.callbacks.subscription.confirmation = subscriptionConfirmation;
+  session.callbacks.roster.updated = updateRoster;
+  session.open();
+}
+
+function loginSucceeded() {
+  $('#login input[type!="button"]').each(function(k, v) { v.value = '' });
+  $('#login').hide();
+  updateRoster();
+}
+
+function loginFailed() {
+  alert('Login failed: ' + session.error.message);
+}
+
+function logout() {
+  session.close();
+  $('#roster').hide();
+  $('.chat-window').hide();
+  $('#login').show();
+  $('#login input:first').focus();
+}
+
+function subscribe() {
+  var user = prompt('Type name of the user to add');
+  user = $.trim(user);
+  if (user) session.requestSubscription(user);
+}
+
+function subscriptionRequest( requests ) {
+  $(requests).each(function(k, v) {
+    var confirmed = confirm(v.name + ' wants to add you as a friend. Approve?');
+    if (confirmed) {
+      session.approveSubscription(v.jid)
+      session.requestSubscription(v.jid)
+    }
+  });
+}
+
+function subscriptionConfirmation( confirmations ) {
+  var confirmed = '';
+  $(confirmations).each(function(k, v) {
+    confirmed += v.name + '\n';
+  });
+
+  if (confirmations.length > 1)
+    alert('Your friend requests to the following users was approved: ' + '\n');
+  else
+    alert('Your friend request to ' + confirmations[0].name + ' was approved');
+}
+
+function updateRoster() {
+  if (!session.connected) return;
+
+  // Clear chat window
+  $('#roster #list ul').empty();
+
+  // Add buddies to roster
+  $(session.roster.items).each(function(k, v) {
+    var html;
+    if (v.available) 
+      html = $.bosh.tagBuilder('li', { jid: v.jid }, $.bosh.tagBuilder('a', { class: 'available', href: '#' }, v.name));
+    else 
+      html = $.bosh.tagBuilder('li', { jid: v.jid }, $.bosh.tagBuilder('a', { class: 'unavailable', href: '#' }, v.name));
+    $('#roster #list ul').append(html);
+  });
+
+  // Styles to control how a name looks when single-clicked on
+  $('#roster #list ul > li').click(function() {
+    deHighlight();
+    $(this).css({ backgroundColor: 'blue' });
+    $(this).children('a').css({ color: 'white' });
+    $(this).children('a').blur();
+  });
+  
+  // Open a new chat window when a name is double-clicked on
+  $('#roster #list ul > li').dblclick(function() {
+    deHighlight();
+    var jid = $(this).attr('jid');
+    createNewChatWindow(jid);
+  });
+
+  $('#roster').show();
+};
+
+function deHighlight() {
+  $('#roster #list ul > li').css({ backgroundColor: 'white' });
+  $('#roster #list ul > li a').css({ color: 'black' });
+}
+
+function createNewChatWindow( jid ) {
+  var chatWindowId = jid.split('@').join('-');
+  $('#template.chat-window').attr('id', chatWindowId).clone();
+  $('#' + chatWindowId).show().children('textarea').focus();
+  
+  // Attach event to 'Send' button on chat window
+  $('#' + chatWindowId + ' div.send input').bind('click', function() {
+    var message = $.trim($(this).parents('.chat-window').children('textarea:first').val());
+    var recipient = $(this).parents('.chat-window').attr('id').split('-')[0];
+    session.sendMessage(recipient, message);
+  });
+}
 /*
 var users = [{ name: 'alice', password: 'secret', div: 'left' },
                { name: 'bob', password: 'secret', div: 'right' }]
@@ -56,22 +170,33 @@ $(document).ready(function() {
 <body>
 <div id="container">
 
-	<div class="chat-window">
-    <div class="header">Alice</div>
+	<div class="chat-window" id="template">
+    <div class="header"></div>
     <div class="incoming"></div>
     <textarea class="outgoing"></textarea>
-    <input type="hidden" name="recipient" value="bob">
     <div class="send"><input type="button" value="Send" name="send"></div>
 	</div>
 
+  <div id="roster">
+    <div class="header">Roster</div>
+    <div id="list"><ul></ul></div>
+    <p>
+      <input type="button" value="Add" id="roster-add">
+      <input type="button" value="Delete" id="roster-delete">
+    <p>
+    <p>
+      <input type="button" value="Logout" id="logout-button">
+    </p>
+  </div>
+
   <div id="login">
     <div class="field">
-      Login<input type="text" name="username">
+      Login<input type="text" name="username" id="username">
     </div>
     <div class="field">
-      Password<input type="text" name="password">
+      Password<input type="password" name="password" id="password">
     </div>
-    <input type="submit" value="Login" id="login-button">
+    <input type="button" value="Login" id="login-button">
   </div>
 
 </div>

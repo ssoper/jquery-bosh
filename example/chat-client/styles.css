@@ -4,7 +4,7 @@
 }
 
 body {
-  background-image: url(glow.jpg);
+  background-image: url(../images/glow.jpg);
   background-position: center top;
   background-repeat: no-repeat;
 	text-align: center;
@@ -16,7 +16,7 @@ body {
 #login {
   width: 300px;
   height: 200px;
-  margin: 300 auto;
+  margin: 100 auto;
   border: black solid thin;
   background-color: #999;
   text-align: center;
@@ -24,42 +24,83 @@ body {
 
 #login .field {
   height: 30%;
-  width: 270px;
+  width: 265px;
   margin: 10 auto auto 10; 
   border: black solid thin;
   text-align: left;
   padding: 3px;
+  padding-left: 10px;
   background-color: transparent;
 }
 
 #login input {
   clear: left;
   float: left;
+  width: 200px;
 }
 
 #login input#login-button {
   margin: 8px auto;
   float: none;
+  width: auto;
 }
 
-.chat-window {
-  width: 300px;
-  height: 250px;
-  text-align: left;
-  margin: 0 20px;
-  background-color: #999;
-  margin-top: 20px;
+#roster {
+  width: 150px;
+  height: 330px;
+  float: right;
+  margin: 20 20 auto;
   border: black solid thin;
+  background-color: #999;
   display: none;
 }
 
-.chat-window .header {
+#roster #list {
+  width: 142px;
+  height: 240px;
+  margin: 3px auto;
+  background-color: white;
+  overflow: auto;
+  border: black solid thin;
+  text-align: left;
+}
+
+#roster a {
+  text-decoration: none;
+}
+
+#roster a.available {
+  color: black;
+}
+
+#roster a.unavailable {
+  color: grey;
+}
+
+#roster p {
+  width: 100%;
+  margin-top: 5px;
+}
+
+div.header {
   width: 100%;
   height: 20px;
   text-align: center;
   background-color: orange;
   border: 0;
   border-bottom: black solid thin;
+}
+
+.chat-window {
+  width: 300px;
+  height: 250px;
+  float: left;
+  text-align: left;
+  margin: 0 20px;
+  background-color: #999;
+  margin-top: 20px;
+  border: black solid thin;
+  display: none;
 }
 
 .chat-window .incoming {
