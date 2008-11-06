@@ -96,6 +96,7 @@ div.header {
   height: 250px;
   float: left;
   text-align: left;
+  font-size: 10pt;
   margin: 0 20px;
   background-color: #999;
   margin-top: 20px;
@@ -130,7 +131,7 @@ div.header {
   border: black solid thin;
   background-color: white;
   overflow: auto;
-  font-size: 12pt;
+  font-size: 10pt; /* textarea does not auto-inherit from chat-window class */
   font-family: Verdana,Helvetica,sans-serif;
 }
 

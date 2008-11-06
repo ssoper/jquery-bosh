@@ -77,16 +77,33 @@ jQuery.bosh = jQuery.extend({
     });
   },
 
+  Sender: function ( packet ) {
+    this.jid = null;
+    this.domain = null;
+    this.name = null;
+    this.client = null;
+    
+    var sender = packet.getAttribute('from') || packet.getAttribute('jid');
+    
+    if (sender) {
+      if (sender.split("@").length > 1) {      
+        var from = sender.split("/")[0];
+        this.jid = from;
+        this.name = from.split('@')[0];
+        this.domain = from.split('@')[1];
+      }
+      if (sender.split("/").length > 1)
+        this.client = sender.split("/")[1];
+    }
+  },
+
 	Message: function( packet ) {
 		this.from = null;
 		this.message = null;
 		this.timestamp = null;
     this.raw = packet;
 
-		if (!packet) return;
-
-		if (packet.getAttribute('from') && packet.getAttribute('from').split("@").length > 1)
-			this.from = packet.getAttribute('from').split("@")[0];
+		this.from = new jQuery.bosh.Sender(packet);
 
 		if (jQuery('body', packet).length > 0)
       this.message = jQuery.trim(jQuery('body', packet).text());
@@ -104,9 +121,7 @@ jQuery.bosh = jQuery.extend({
 	},
 
   Presence: function( packet ) {
-    this.jid = packet.getAttribute('jid') || packet.getAttribute('from');
-    this.jid = this.jid.split('/')[0];  // JID sometimes contains Jabber client 'user@domain/client'
-    this.name = this.jid.split('@')[0];
+    this.from = new jQuery.bosh.Sender(packet);
     this.available = packet.getAttribute('type') == 'unavailable' ? false : true;
   },
 
@@ -116,7 +131,7 @@ jQuery.bosh = jQuery.extend({
     this.find = function( presence ) {
       var result = null;
       jQuery(this.items).each(function(k, v) {
-        if (presence.jid == v.jid) result = k;
+        if (presence.from.jid == v.from.jid) result = k;
       });
       return result;
     };
@@ -197,6 +212,7 @@ jQuery.bosh = jQuery.extend({
 		this.route = 'xmpp:' + this.domain + ':' + jQuery.bosh.settings.port;
 		this.username = username;
 		this.password = password;
+		this.jid = this.username + '@' + this.domain;
 
 		this.rid = jQuery.bosh.generateRid();
 		this.lastResponse = null;
@@ -241,17 +257,8 @@ jQuery.bosh = jQuery.extend({
 				self.queues.messages.push(new jQuery.bosh.Message(v));
 			});
 
-      if (self.callbacks.message.received) self.callbacks.message.received(self.queues.messages);
+      if (self.callbacks.message.received) self.callbacks.message.received();
 		};
-
-    this.ingestPresences = function( self, data ) {
-      jQuery('presence', data).each(function(k, v) {
-        var username = v.getAttribute('from').split('@')[0]
-        if (username != self.username) self.roster.push(new jQuery.bosh.Presence(v));
-      });
-      
-      if (self.callbacks.roster.updated) self.callbacks.roster.updated();
-    };
 
     this.ingestSubscriptionRequests = function( self, data ) {
       self.queues.subscription.requests = [];
@@ -259,7 +266,7 @@ jQuery.bosh = jQuery.extend({
         self.queues.subscription.requests.push(new jQuery.bosh.Presence(v));
       });
 
-      if (self.callbacks.subscription.request) self.callbacks.subscription.request(self.queues.subscription.requests);
+      if (self.callbacks.subscription.request) self.callbacks.subscription.request();
     };
 
     this.ingestSubscriptionConfirmations = function( self, data ) {
@@ -268,7 +275,16 @@ jQuery.bosh = jQuery.extend({
         self.queues.subscription.confirmations.push(new jQuery.bosh.Presence(v));
       });
 
-      if (self.callbacks.subscription.confirmation) self.callbacks.subscription.confirmation(self.queues.subscription.confirmations);
+      if (self.callbacks.subscription.confirmation) self.callbacks.subscription.confirmation();
+    };
+
+    this.ingestPresences = function( self, data ) {
+      jQuery('presence', data).each(function(k, v) {
+        var username = v.getAttribute('from').split('@')[0]
+        if (username != self.username) self.roster.push(new jQuery.bosh.Presence(v));
+      });
+      
+      if (self.callbacks.roster.updated) self.callbacks.roster.updated();
     };
 
     this.listen = function() {

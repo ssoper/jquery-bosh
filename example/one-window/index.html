@@ -29,9 +29,9 @@ $(document).ready(function() {
     var this_div = $("#" + users[k].div);
 
     // Set message received callback function
-    sessions[k].callbacks.message.received = function(messages) {
-      $(messages).each(function(k, v) {
-        addText(this_div, { to: v.from, message: v.message });
+    sessions[k].callbacks.message.received = function() {
+      $(sessions[k].queues.messages).each(function(k, v) {
+        addText(this_div, { to: v.from.name, message: v.message });
       });
     }
   });

@@ -22,6 +22,7 @@ function login() {
   session.callbacks.subscription.request = subscriptionRequest;
   session.callbacks.subscription.confirmation = subscriptionConfirmation;
   session.callbacks.roster.updated = updateRoster;
+  session.callbacks.message.received = messageReceived;
   session.open();
 }
 
@@ -50,23 +51,23 @@ function subscribe() {
 }
 
 function subscriptionRequest( requests ) {
-  $(requests).each(function(k, v) {
-    var confirmed = confirm(v.name + ' wants to add you as a friend. Approve?');
+  $(session.queues.subscription.requests).each(function(k, v) {
+    var confirmed = confirm(v.from.name + ' wants to add you as a friend. Approve?');
     if (confirmed) {
-      session.approveSubscription(v.jid)
-      session.requestSubscription(v.jid)
+      session.approveSubscription(v.from.jid)
+      session.requestSubscription(v.from.jid)
     }
   });
 }
 
-function subscriptionConfirmation( confirmations ) {
+function subscriptionConfirmation() {
   var confirmed = '';
-  $(confirmations).each(function(k, v) {
+  $(session.queues.subscription.confirmations).each(function(k, v) {
     confirmed += v.name + '\n';
   });
 
-  if (confirmations.length > 1)
-    alert('Your friend requests to the following users was approved: ' + '\n');
+  if (session.queues.subscription.confirmations.length > 1)
+    alert('Your friend requests to the following users was approved: \n' + confirmed);
   else
     alert('Your friend request to ' + confirmations[0].name + ' was approved');
 }
@@ -74,20 +75,20 @@ function subscriptionConfirmation( confirmations ) {
 function updateRoster() {
   if (!session.connected) return;
 
-  // Clear chat window
+  // Clear roster
   $('#roster #list ul').empty();
 
   // Add buddies to roster
   $(session.roster.items).each(function(k, v) {
     var html;
     if (v.available) 
-      html = $.bosh.tagBuilder('li', { jid: v.jid }, $.bosh.tagBuilder('a', { class: 'available', href: '#' }, v.name));
+      html = $.bosh.tagBuilder('li', { jid: v.from.jid }, $.bosh.tagBuilder('a', { class: 'available', href: '#' }, v.from.name));
     else 
-      html = $.bosh.tagBuilder('li', { jid: v.jid }, $.bosh.tagBuilder('a', { class: 'unavailable', href: '#' }, v.name));
+      html = $.bosh.tagBuilder('li', { jid: v.from.jid }, $.bosh.tagBuilder('a', { class: 'unavailable', href: '#' }, v.from.name));
     $('#roster #list ul').append(html);
   });
 
-  // Styles to control how a name looks when single-clicked on
+  // Control how a name looks when single-clicked on
   $('#roster #list ul > li').click(function() {
     deHighlight();
     $(this).css({ backgroundColor: 'blue' });
@@ -111,7 +112,7 @@ function deHighlight() {
 }
 
 function createNewChatWindow( jid ) {
-  var chatWindowId = jid.split('@').join('-');
+  var chatWindowId = domizeJid(jid)
   $('#template.chat-window').attr('id', chatWindowId).clone();
   $('#' + chatWindowId).show().children('textarea').focus();
   
@@ -119,52 +120,34 @@ function createNewChatWindow( jid ) {
   $('#' + chatWindowId + ' div.send input').bind('click', function() {
     var message = $.trim($(this).parents('.chat-window').children('textarea:first').val());
     var recipient = $(this).parents('.chat-window').attr('id').split('-')[0];
+    $(this).parents('.chat-window').children('.outgoing:first')[0].value = "";
+    addText($(this), { to: session.username, message: message });
     session.sendMessage(recipient, message);
   });
 }
-/*
-var users = [{ name: 'alice', password: 'secret', div: 'left' },
-               { name: 'bob', password: 'secret', div: 'right' }]
 
-var sessions = [];
+function domizeJid( jid ) {
+  return jid.split('@').join('-');
+}
 
-function addText(element, settings) {
+function messageReceived() {
+  jQuery(session.queues.messages).each(function(k, v) {
+    var chatWindow = domizeJid(v.from.jid);
+    if ($('#' + chatWindow).length == 0) createNewChatWindow(v.from.jid);
+    console.log($('#' + chatWindow)[0]);
+    addText($('#' + chatWindow), { from: v.from.name, message: v.message });
+  });
+}
+
+function addText(jqElement, settings) {
   if (settings['to'] == null)
     html = "<p class='message'><span class='from'>" + settings['from'] + ":</span> ";
   else
     html = "<p class='message'><span class='to'>" + settings['to'] + ":</span> ";
   html += settings['message'] + "</p>";
-  element.children(".incoming").append(html);
+  element = jqElement.hasClass('chat-window') ? jqElement.children(".incoming") : jqElement.parents('.chat-window').children(".incoming");
+  element.append(html);
 }
-
-$(document).ready(function() {
-  // Create sessions
-  $(users).each(function(k, v) {
-    sessions[k] = new $.bosh.Session(host, v.name, v.password);
-    sessions[k].open();
-    var this_div = $("#" + users[k].div);
-
-    // Set message received callback function
-    sessions[k].cbMsgRecvd = function(messages) {
-      $(messages).each(function(k, v) {
-        addText(this_div, { to: v.from, message: v.message });
-      });
-    }
-  });
-
-  // Attach event to button
-  $('#container > div').each(function(k, v) {
-    $(v).find('div.send > input[type="button"]').bind('click', function() {
-      var recipient = $(v).children('input[type="hidden"]:first').val();
-      var message = $.trim($(v).children('textarea:first').val());
-      if (message == "") return;
-      sessions[k].sendMessage(recipient, message);
-      $(v).children('textarea:first')[0].value = "";
-      addText($(v), { from: users[k].name, message: message });
-    });
-  });
-});
-*/
 </script>
 </head>
 <body>
