@@ -4,11 +4,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Test BOSH</title>
     <link rel="Stylesheet" media="screen" href="testsuite.css"/>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js"></script>
-    <script type="text/javascript" src="jqUnit.js"></script>
+    <script type="text/javascript" src="../jquery-1.2.6.js"></script>
     <script type="text/javascript" src="../jquery.bosh.js"></script>
     <script type="text/javascript" src="../jquery.base64.js"></script>
-    
+    <script type="text/javascript" src="jqUnit.js"></script>
+
     <script>
     $.extend(jqUnit, {
       createDocument: function( root ) {
@@ -31,31 +31,33 @@ var temp = function ($) { with (jqUnit) {
 
   module("Test session creation");
   test('URL correctly parsed', function() {
-    session = new $.bosh.Session('localhost/http-bind/', 'fake_user', 'my_password');
-    equals(session.url, 'http://localhost/http-bind/');
+    session = new Session('localhost/http-bind/', 'fake_user', 'my_password');
+    equals(session.url(), 'http://localhost/http-bind/');
 
-    session = new $.bosh.Session('https://localhost', 'fake_user', 'my_password');
-    equals(session.url, 'https://localhost');
+    session = new Session('https://localhost', 'fake_user', 'my_password');
+    equals(session.url(), 'https://localhost');
   });
 
   test('Default value for "domain"', function() {
-    session = new $.bosh.Session('localhost/http-bind/', 'fake_user', 'my_password');
-    equals(session.domain, 'localhost');
+    session = new Session('localhost/http-bind/', 'fake_user', 'my_password');
+    equals(session.domain(), 'localhost');
   });
 
   module('Test tag builder');
   test('Empty tag', function() {
-    equals(jQuery.bosh.tagBuilder('body'), '<body/>');
+    equals(tagBuilder('body'), '<body/>');
   });
   
   test('Nested tags', function() {
-    equals(jQuery.bosh.tagBuilder('body', jQuery.bosh.tagBuilder('message')), '<body><message/></body>');
+    equals(tagBuilder('body', [['message']]), '<body><message/></body>');
   });
-  
+
   test('Tag attributes', function() {
-    equals(jQuery.bosh.tagBuilder('body', { id: 1, onclick: 'doSomething()' }), "<body id='1' onclick='doSomething()'/>");
-    equals(jQuery.bosh.tagBuilder('body', { xmlns_xmpp: 'jabber' }), "<body xmlns:xmpp='jabber'/>");
+    equals(tagBuilder('body', { id: 1, onclick: 'doSomething()' }), "<body id='1' onclick='doSomething()'/>");
+    equals(tagBuilder('body', { xmlns_xmpp: 'jabber' }), "<body xmlns:xmpp='jabber'/>");
   });
+  /*
+  FIXME: Expose Message object to tests without exposing to client
   
   module('Test Message parsing');
   test('Valid packet', function() {
@@ -67,7 +69,7 @@ var temp = function ($) { with (jqUnit) {
     packet.firstChild.appendChild(packet.createElement('x'));
     packet.firstChild.childNodes[1].setAttribute('stamp', '20080923T02:38:05');
 
-    message = new jQuery.bosh.Message(packet.documentElement);
+    message = new Message(packet.documentElement);
 
     equals(message.from, 'sean');
     equals(message.message, 'Hello');
@@ -86,7 +88,7 @@ var temp = function ($) { with (jqUnit) {
     equals(message.message, null);
     equals(message.timestamp, null);
   });
-
+  */
 } }(jQuery);
     </script>
   </head>

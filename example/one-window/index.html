@@ -24,13 +24,13 @@ function addText(element, settings) {
 $(document).ready(function() {
   // Create sessions
   $(users).each(function(k, v) {
-    sessions[k] = new $.bosh.Session(host, v.name, v.password);
+    sessions[k] = new Session(host, v.name, v.password);
     sessions[k].open();
     var this_div = $("#" + users[k].div);
 
     // Set message received callback function
-    sessions[k].callbacks.message.received = function() {
-      $(sessions[k].queues.messages).each(function(k, v) {
+    sessions[k].callbacks().message.received = function() {
+      $(sessions[k].queues().messages).each(function(k, v) {
         addText(this_div, { to: v.from.name, message: v.message });
       });
     }
