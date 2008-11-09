@@ -55,7 +55,9 @@ var temp = function ($) { with (jqUnit) {
   test('Tag attributes', function() {
     equals(tagBuilder('body', { id: 1, onclick: 'doSomething()' }), "<body id='1' onclick='doSomething()'/>");
     equals(tagBuilder('body', { xmlns_xmpp: 'jabber' }), "<body xmlns:xmpp='jabber'/>");
+    equals(tagBuilder('body', { css_class: 'red', onclick: 'doSomething()' }), "<body class='red' onclick='doSomething()'/>");
   });
+
   /*
   FIXME: Expose Message object to tests without exposing to client
   

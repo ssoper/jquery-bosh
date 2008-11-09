@@ -74,7 +74,7 @@ body {
 }
 
 #roster a.unavailable {
-  color: grey;
+  color: #999;
 }
 
 #roster p {
@@ -123,16 +123,22 @@ div.header {
   font-weight: bold;
 }
 
-.chat-window textarea.outgoing {
+.chat-window .outgoing {
   width: 294px;
   height: 94px;
   margin-top: 1px;
   margin-left: 3px;
   border: black solid thin;
   background-color: white;
+}
+
+.outgoing textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
   overflow: auto;
   font-size: 10pt; /* textarea does not auto-inherit from chat-window class */
-  font-family: Verdana,Helvetica,sans-serif;
+  font-family: Verdana,Helvetica,sans-serif;  
 }
 
 .chat-window .send {

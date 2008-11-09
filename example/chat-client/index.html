@@ -88,9 +88,9 @@ function updateRoster() {
   $(session.roster()).each(function(k, v) {
     var html;
     if (v.available) 
-      html = tagBuilder('li', { jid: v.from.jid }, tagBuilder('a', { class: 'available', href: '#' }, v.from.name));
+      html = tagBuilder('li', { jid: v.from.jid }, [['a', { css_class: 'available', href: '#' }, v.from.name]]);
     else 
-      html = tagBuilder('li', { jid: v.from.jid }, tagBuilder('a', { class: 'unavailable', href: '#' }, v.from.name));
+      html = tagBuilder('li', { jid: v.from.jid }, [['a', { css_class: 'unavailable', href: '#' }, v.from.name]]);
     $('#roster #list ul').append(html);
   });
 
@@ -124,9 +124,9 @@ function createNewChatWindow( jid ) {
   
   // Attach event to 'Send' button on chat window
   $('#' + chatWindowId + ' div.send input').bind('click', function() {
-    var message = $.trim($(this).parents('.chat-window').children('textarea:first').val());
+    var message = $.trim($(this).parents('.chat-window').children('.outgoing').children('textarea:first').val());
     var recipient = $(this).parents('.chat-window').attr('id').split('-')[0];
-    $(this).parents('.chat-window').children('.outgoing:first')[0].value = "";
+    $(this).parents('.chat-window').children('.outgoing').children('textarea:first')[0].value = "";
     addText($(this), { to: session.username(), message: message });
     session.sendMessage(recipient, message);
   });
@@ -161,7 +161,7 @@ function addText( jqElement, settings ) {
 	<div class="chat-window" id="template">
     <div class="header"></div>
     <div class="incoming"></div>
-    <textarea class="outgoing"></textarea>
+    <div class="outgoing"><textarea></textarea></div>
     <div class="send"><input type="button" value="Send" name="send"></div>
 	</div>
 

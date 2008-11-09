@@ -1,5 +1,0 @@
-1. Finish out rest of spec implementation
-2. Implement DIGEST-MD5 (only PLAIN is supported now)
-3. More tests!
-4. Code structuring
-5. Ferret out cases whereby a request gets sent and no new request is generated thus meaning messages get queued on Jabber server

@@ -20,6 +20,9 @@
     var buf = '<' + name;
     if (attrs) {
       $.each(attrs, function(k, v) {
+        // IE barfs on properties named 'class' so prefix with 'css_'
+        if (k == 'css_class') k = 'class'; 
+
         k = k.replace(/_/, ':');
         buf += ' ' + k + '=\'' + v + '\'';      
       });
