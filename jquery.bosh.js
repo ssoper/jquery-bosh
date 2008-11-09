@@ -472,7 +472,3 @@
     this.setup = function(newSettings) { $.extend(settings, newSettings) };
   };
 })(jQuery);
-
-a = ['iq', {foo: 'bar'}]
-b = [ "iq", { foo: 'bar' }, [ [ 'bind', { x: 'y' } ]]]
-c = ['iq', 'data']
