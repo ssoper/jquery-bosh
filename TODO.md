@@ -1,4 +1,4 @@
-* WebKit support
+* Improve included chat client
 * Implement MUCs
 * Increased testing
 * Make roster more robust

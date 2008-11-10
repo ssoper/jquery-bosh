@@ -10,7 +10,8 @@ Uses the jqUnit test suite. Browse to jquery-bosh/test to run the tests.
 
 ### Supported Browsers
 * Firefox 2+
-* IE6/7 
+* IE6/7
+* Safari/Google Chrome
 
 ### Author
 sean.soper@gmail.com
