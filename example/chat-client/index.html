@@ -129,11 +129,14 @@ function deHighlight() {
 function createNewChatWindow( jid ) {
   var chatWindowId = domizeJid(jid)
   
+  // Do not create a new chat window if one with the same id already exists
   if ($('#' + chatWindowId).length > 0) {
     $('#' + chatWindowId).show();
+    $('#' + chatWindowId + ' textarea').focus();
     return true;
   }
   
+  // Create a new chat window and display it
   $('#template.chat-window').attr('id', chatWindowId).clone();
   $('#' + chatWindowId).find('.title').html(jid);
   $('#' + chatWindowId).show().children('textarea').focus();

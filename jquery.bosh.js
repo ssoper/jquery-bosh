@@ -309,16 +309,12 @@
     },
 
     ingestPacket: function( response, self ) {
-      //if ($('message', response).length > 0)
-        self.ingestMessages(response, self);
+      self.ingestMessages(response, self);
       
       if ($('presence', response).length > 0) {
-        //if ($('presence[type="subscribe"]', response).length > 0)
-          self.ingestSubscriptionRequests(response, self);
-        //else if ($('presence[type="subscribed"]', response).length > 0)
-          self.ingestSubscriptionConfirmations(response, self);
-        //else
-          self.ingestPresences(response, self);
+        self.ingestSubscriptionRequests(response, self);
+        self.ingestSubscriptionConfirmations(response, self);
+        self.ingestPresences(response, self);
       }
 
       self.listen();
