@@ -1,0 +1,12 @@
+#login fieldset {
+  padding: 0;
+  padding-bottom: 15px;
+}
+
+#login label {
+  padding-left: 15px;
+}
+
+.chat-window .incoming {
+  margin-left: 3px;
+}

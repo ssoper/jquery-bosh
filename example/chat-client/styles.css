@@ -4,7 +4,7 @@
 }
 
 body {
-  background-image: url(../images/glow.jpg);
+  background-image: url(../assets/glow.jpg);
   background-position: center top;
   background-repeat: no-repeat;
 	text-align: center;
@@ -17,26 +17,37 @@ body {
   width: 300px;
   height: 200px;
   margin: 100 auto;
-  border: black solid thin;
+  border: black solid 1px;
   background-color: #999;
   text-align: center;
 }
 
-#login .field {
-  height: 30%;
-  width: 265px;
-  margin: 10 auto auto 10; 
-  border: black solid thin;
-  text-align: left;
-  padding: 3px;
-  padding-left: 10px;
-  background-color: transparent;
+#login fieldset {
+  margin: 10px;
+  border: black solid 1px;
+  padding: 15px;
+  padding-top: 0;
+}
+
+#login label, #login input {
+  font-size: 10pt;
+  clear: left;
+  float: left;
+}
+
+#login label {
+  margin-top: 10px;
 }
 
 #login input {
-  clear: left;
-  float: left;
-  width: 200px;
+  width: 250px;
+}
+
+#login legend {
+  text-align: left;
+  color: black;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 #login input#login-button {
@@ -50,7 +61,7 @@ body {
   height: 330px;
   float: right;
   margin: 20 20 auto;
-  border: black solid thin;
+  border: black solid 1px;
   background-color: #999;
   display: none;
 }
@@ -61,20 +72,32 @@ body {
   margin: 3px auto;
   background-color: white;
   overflow: auto;
-  border: black solid thin;
+  border: black solid 1px;
   text-align: left;
 }
 
-#roster a {
+#roster #list li a {
   text-decoration: none;
 }
 
-#roster a.available {
+#roster #list li a.available {
   color: black;
 }
 
-#roster a.unavailable {
+#roster #list li a.unavailable {
   color: #999;
+}
+
+#roster #list li.selected {
+  background-color: blue;
+}
+
+#roster #list li.selected a {
+  color: white;
+}
+
+#roster #list li.selected a.unavailable {
+  font-style: italic;
 }
 
 #roster p {
@@ -88,7 +111,7 @@ div.header {
   text-align: center;
   background-color: orange;
   border: 0;
-  border-bottom: black solid thin;
+  border-bottom: black solid 1px;
 }
 
 .chat-window {
@@ -100,8 +123,29 @@ div.header {
   margin: 0 20px;
   background-color: #999;
   margin-top: 20px;
-  border: black solid thin;
+  border: black solid 1px;
   display: none;
+}
+
+.chat-window .header .close {
+  width: 15px;
+  height: 15px;
+  float: left;
+  margin-top: 1px;
+  margin-left: 1px;
+  border: black solid 1px;
+}
+
+.chat-window .header .close a {
+  font-size: 8pt;
+  color: black;
+  text-decoration: none;
+}
+
+.chat-window .header .title {
+  width: 260px;
+  float: left;
+  text-align: center;
 }
 
 .chat-window .incoming {
@@ -110,7 +154,7 @@ div.header {
   margin: 3px auto;
   background-color: white;
   overflow: auto;
-  border: black solid thin;
+  border: black solid 1px;
 }
 
 .chat-window .message span.to {
@@ -124,11 +168,11 @@ div.header {
 }
 
 .chat-window .outgoing {
-  width: 294px;
+  width: 292px;
   height: 94px;
   margin-top: 1px;
   margin-left: 3px;
-  border: black solid thin;
+  border: black solid 1px;
   background-color: white;
 }
 

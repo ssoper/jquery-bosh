@@ -3,16 +3,21 @@
 <script src="../../jquery-1.2.6.js"></script>
 <script src="../../jquery.base64.js"></script>
 <script src="../../jquery.bosh.js"></script>
+<script src="../assets/jquery-ui-personalized-1.6rc2.min.js"></script>
 <link href="styles.css" media="screen" rel="stylesheet" type="text/css" />
+<!--[if IE]>
+<link href="ie.css" media="screen" rel="stylesheet" type="text/css" />
+<![endif]-->
 <script>
-var host = 'http://localhost/http-bind';
+var host = 'http://192.168.0.10/http-bind';
 var session = null;
 
 $(document).ready(function() {
-  $('#login-button').bind('click', login);
+  $('#login form').submit(login);
   $('#logout-button').bind('click', logout);
   $('#roster-add').bind('click', subscribe);
   // $('#roster-delete').bind('click', unsubscribe);
+  $('#login input:first').focus();
 });
 
 function login() {
@@ -24,10 +29,11 @@ function login() {
   session.callbacks().roster.updated = updateRoster;
   session.callbacks().message.received = messageReceived;
   session.open();
+  return false; // So form doesn't submit
 }
 
 function clearLoginForm() {
-  $('#login input[type!="button"]').each(function(k, v) { v.value = '' });
+  $('#login input[type!="submit"]').each(function(k, v) { v.value = '' });
 }
 
 function loginSucceeded() {
@@ -39,7 +45,7 @@ function loginSucceeded() {
 function loginFailed() {
   alert('Login failed: ' + session.error().message);
   clearLoginForm();
-  $('#login input:first').focus();  
+  $('#login input:first').focus();
 }
 
 function logout() {
@@ -96,9 +102,13 @@ function updateRoster() {
 
   // Control how a name looks when single-clicked on
   $('#roster #list ul > li').click(function() {
-    deHighlight();
-    $(this).css({ backgroundColor: 'blue' });
-    $(this).children('a').css({ color: 'white' });
+    if ($(this).hasClass('selected')) {
+      deHighlight();
+    }
+    else {
+      deHighlight();
+      $(this).addClass('selected');     
+    }
     $(this).children('a').blur();
   });
   
@@ -113,23 +123,46 @@ function updateRoster() {
 };
 
 function deHighlight() {
-  $('#roster #list ul > li').css({ backgroundColor: 'white' });
-  $('#roster #list ul > li a').css({ color: 'black' });
+  $('#roster #list ul > li').removeClass('selected');
 }
 
 function createNewChatWindow( jid ) {
   var chatWindowId = domizeJid(jid)
+  
+  if ($('#' + chatWindowId).length > 0) {
+    $('#' + chatWindowId).show();
+    return true;
+  }
+  
   $('#template.chat-window').attr('id', chatWindowId).clone();
+  $('#' + chatWindowId).find('.title').html(jid);
   $('#' + chatWindowId).show().children('textarea').focus();
   
-  // Attach event to 'Send' button on chat window
-  $('#' + chatWindowId + ' div.send input').bind('click', function() {
-    var message = $.trim($(this).parents('.chat-window').children('.outgoing').children('textarea:first').val());
-    var recipient = $(this).parents('.chat-window').attr('id').split('-')[0];
-    $(this).parents('.chat-window').children('.outgoing').children('textarea:first')[0].value = "";
-    addText($(this), { to: session.username(), message: message });
-    session.sendMessage(recipient, message);
+  // Attach events to send messages
+  $('#' + chatWindowId + ' textarea').keyup(sendMessage);
+  $('#' + chatWindowId + ' input[type="button"]').click(sendMessage);
+  
+  // Attach event to 'Close' button on chat window
+  $('#' + chatWindowId + ' .header .close a').click(function () {
+    $(this).parents('.chat-window').hide();
+    $(this).blur();
   });
+  
+  $('#' + chatWindowId).draggable();
+  $('#' + chatWindowId + ' textarea').focus();
+}
+
+function sendMessage( event ) {
+  if (event.which != 1 && event.which != 13) return false;
+  var message = $.trim($(this).parents('.chat-window').find('textarea:first').val());
+  if (message == "") {
+    $(this).parents('.chat-window').find('textarea:first')[0].value = "";
+    return false;
+  }
+  var recipient = $(this).parents('.chat-window').attr('id').split('-')[0];
+  $(this).parents('.chat-window').find('textarea:first')[0].value = "";
+  addText($(this), { to: session.username(), message: message });
+  session.sendMessage(recipient, message);
 }
 
 function domizeJid( jid ) {
@@ -139,7 +172,7 @@ function domizeJid( jid ) {
 function messageReceived() {
   $(session.queues().messages).each(function(k, v) {
     var chatWindow = domizeJid(v.from.jid);
-    if ($('#' + chatWindow).length == 0) createNewChatWindow(v.from.jid);
+    createNewChatWindow(v.from.jid);
     addText($('#' + chatWindow), { from: v.from.name, message: v.message });
   });
 }
@@ -152,6 +185,7 @@ function addText( jqElement, settings ) {
   html += settings['message'] + '</p>';
   element = jqElement.hasClass('chat-window') ? jqElement.children('.incoming') : jqElement.parents('.chat-window').children('.incoming');
   element.append(html);
+  element.attr('scrollTop', element.attr('scrollHeight'));
 }
 </script>
 </head>
@@ -159,7 +193,10 @@ function addText( jqElement, settings ) {
 <div id="container">
 
 	<div class="chat-window" id="template">
-    <div class="header"></div>
+    <div class="header">
+      <div class="close"><a href="#">X</a></div>
+      <div class="title"></div>
+    </div>
     <div class="incoming"></div>
     <div class="outgoing"><textarea></textarea></div>
     <div class="send"><input type="button" value="Send" name="send"></div>
@@ -178,13 +215,16 @@ function addText( jqElement, settings ) {
   </div>
 
   <div id="login">
-    <div class="field">
-      <p>Login</p><input type="text" name="username" id="username">
-    </div>
-    <div class="field">
-      <p>Password</p><input type="password" name="password" id="password">
-    </div>
-    <input type="button" value="Login" id="login-button">
+    <form>
+    <fieldset>
+      <legend>Login</legend>
+      <label for="username">Username</label>
+      <input type="text" name="username" id="username">
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password">
+    </fieldset>
+    <input type="submit" value="Login" id="login-button">
+    </form>
   </div>
 
 </div>
