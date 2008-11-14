@@ -169,7 +169,7 @@ function sendMessage( event ) {
 }
 
 function domizeJid( jid ) {
-  return jid.split('@').join('-');
+  return jid.split('@').join('-').replace('.', '-');
 }
 
 function messageReceived() {
